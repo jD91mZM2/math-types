@@ -67,11 +67,15 @@ impl Fraction {
     }
     /// Find the lowest possible denominator for fraction
     pub fn simplify(mut self) -> Self {
+        if self.denominator < 0 {
+            self.numerator = -self.numerator;
+            self.denominator = -self.denominator;
+        }
         while self.numerator % 2 == 0 && self.denominator % 2 == 0 {
             self.numerator /= 2;
             self.denominator /= 2;
         }
-        let upper = cmp::max(self.numerator, self.denominator);
+        let upper = cmp::max(self.numerator.abs(), self.denominator);
         // Biggest first
         //for i in iter::once(self.denominator)
         //            .chain((3..=(self.denominator as f32).sqrt().ceil() as i32).rev().step_by(2)) {

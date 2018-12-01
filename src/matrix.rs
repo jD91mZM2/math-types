@@ -149,6 +149,28 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
         for col in 0..self.cols {
             // For each row in that column, apply an operation:
             for row in 0..self.rows {
+                if self.get(col, col).is_zero() {
+                    // The diagonal element is zero, let's swap this row with some other row.
+                    let mut swap = None;
+                    for row2 in row..self.rows {
+                        if !self.get(row2, col).is_zero() {
+                            swap = Some(row2);
+                            break;
+                        }
+                    }
+                    match swap {
+                        None => return false,
+                        Some(swap) => {
+                            for col2 in 0..self.cols {
+                                self.swap(col, col2, swap, col2);
+                            }
+                            for col2 in 0..result.cols {
+                                result.swap(col, col2, swap, col2);
+                            }
+                        }
+                    }
+                }
+
                 if col == row {
                     // Divide this row by itself so the first column is 1.
                     let scale = *self.get(row, col);
@@ -160,27 +182,6 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
                     }
                 } else {
                     // TODO check correctness of the swapping
-                    if self.get(col, col).is_zero() {
-                        // The diagonal element is zero, let's swap this row with some other row.
-                        let mut swap = None;
-                        for row2 in row..self.rows {
-                            if !self.get(row2, col).is_zero() {
-                                swap = Some(row2);
-                                break;
-                            }
-                        }
-                        match swap {
-                            None => return false,
-                            Some(swap) => {
-                                for col2 in 0..self.cols {
-                                    self.swap(col, col2, swap, col2);
-                                }
-                                for col2 in 0..result.cols {
-                                    result.swap(col, col2, swap, col2);
-                                }
-                            }
-                        }
-                    }
                     // Subtract each row with the row with the diagonal element,
                     // but scale it such that first column is 0.
                     let scale = *self.get(row, col) / *self.get(col, col);
@@ -488,6 +489,23 @@ mod tests {
                 Fraction::new(4, 1), Fraction::new(4, 1), Fraction::new(2, 1),
                 Fraction::new(2, 1), Fraction::new(4, 1), Fraction::new(2, 1),
                 Fraction::new(2, 1), Fraction::new(2, 1), Fraction::new(2, 1)
+            ]
+        );
+        assert_eq!(
+            fraction_matrix(
+                &[
+                    0, 1, 1,
+                    1, 0, 1,
+                    1, 1, 0
+                ],
+                3, 3,
+                |matrix| *matrix = matrix.invert().unwrap()
+            ),
+
+            vec![
+                Fraction::new(-1, 2), Fraction::new(1, 2), Fraction::new(1, 2),
+                Fraction::new(1, 2), Fraction::new(-1, 2), Fraction::new(1, 2),
+                Fraction::new(1, 2), Fraction::new(1, 2), Fraction::new(-1, 2)
             ]
         );
     }
