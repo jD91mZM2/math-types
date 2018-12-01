@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
     let q = matrix.window(0, 0, end, end);
     println!("({:?} - {:?})^-1", i, q);
     println!("{:?}^-1", i.clone() - &q);
-    let n = (i - &q).invert().unwrap();
+    let n = (i - &q).inverse().unwrap();
     println!("N = (I-Q)^-1 = {:?}", n);
 
     println!();

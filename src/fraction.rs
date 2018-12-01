@@ -88,12 +88,12 @@ impl Fraction {
         }
         self
     }
-    /// Same thing as in mathematics taking the power of -1:
+    /// Same thing as in mathematics taking the power of -1.
     /// In this case also 1/n.
     ///
     /// ## Panics
     /// Panics if the numerator (new denominator) is 0
-    pub fn invert(mut self) -> Self {
+    pub fn inverse(mut self) -> Self {
         mem::swap(&mut self.numerator, &mut self.denominator);
         assert_ne!(self.denominator, 0, "new denominator is 0");
         self
@@ -162,7 +162,7 @@ impl<T: Into<Fraction>> Mul<T> for Fraction {
 impl<T: Into<Fraction>> Div<T> for Fraction {
     type Output = Fraction;
     fn div(self, other: T) -> Self {
-        self * other.into().invert()
+        self * other.into().inverse()
     }
 }
 macro_rules! impl_op {

@@ -181,7 +181,6 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
                         *result.get_mut(row, col2) /= scale;
                     }
                 } else {
-                    // TODO check correctness of the swapping
                     // Subtract each row with the row with the diagonal element,
                     // but scale it such that first column is 0.
                     let scale = *self.get(row, col) / *self.get(col, col);
@@ -196,10 +195,11 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
         }
         true
     }
-    /// A convenience function that applies Gauss Jordan Elimination on this
-    /// matrix and its identity matrix in order to get the inverted matrix.
-    /// Returns None if invertion fails.
-    pub fn invert(&self) -> Option<Matrix<'static, T>> {
+    /// Same thing as in mathematics taking the power of -1. A convenience
+    /// function that applies Gauss Jordan Elimination on this matrix and its
+    /// identity matrix in order to get the inverse matrix. Returns None if
+    /// inversion fails.
+    pub fn inverse(&self) -> Option<Matrix<'static, T>> {
         let mut identity = Matrix::identity(self.cols);
         if self.clone().gauss_jordan_eliminate(&mut identity) {
             Some(identity)
@@ -441,7 +441,7 @@ mod tests {
         );
     }
     #[test]
-    fn invert() {
+    fn inverse() {
         assert_eq!(
             fraction_matrix(
                 &[
@@ -450,7 +450,7 @@ mod tests {
                      0, -1,  2
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.invert().unwrap()
+                |matrix| *matrix = matrix.inverse().unwrap()
             ),
 
             vec![
@@ -466,7 +466,7 @@ mod tests {
                     2, 6
                 ],
                 2, 2,
-                |matrix| *matrix = matrix.invert().unwrap()
+                |matrix| *matrix = matrix.inverse().unwrap()
             ),
 
             vec![
@@ -482,7 +482,7 @@ mod tests {
                     Fraction::new(-1, 2), Fraction::new(0, 1), Fraction::new(1, 1)
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.invert().unwrap()
+                |matrix| *matrix = matrix.inverse().unwrap()
             ),
 
             vec![
@@ -496,16 +496,16 @@ mod tests {
                 &[
                     0, 1, 1,
                     1, 0, 1,
-                    1, 1, 0
+                    1, 1, 3
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.invert().unwrap()
+                |matrix| *matrix = matrix.inverse().unwrap()
             ),
 
             vec![
-                Fraction::new(-1, 2), Fraction::new(1, 2), Fraction::new(1, 2),
-                Fraction::new(1, 2), Fraction::new(-1, 2), Fraction::new(1, 2),
-                Fraction::new(1, 2), Fraction::new(1, 2), Fraction::new(-1, 2)
+                Fraction::new(1, 1), Fraction::new(2, 1), Fraction::new(-1, 1),
+                Fraction::new(2, 1), Fraction::new(1, 1), Fraction::new(-1, 1),
+                Fraction::new(-1, 1), Fraction::new(-1, 1), Fraction::new(1, 1)
             ]
         );
     }
