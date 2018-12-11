@@ -185,10 +185,12 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
                     // but scale it such that first column is 0.
                     let scale = *self.get(row, col) / *self.get(col, col);
                     for col2 in 0..self.cols {
-                        *self.get_mut(row, col2) -= scale * *self.get(col, col2);
+                        let value = *self.get(col, col2);
+                        *self.get_mut(row, col2) -= scale * value;
                     }
                     for col2 in 0..result.cols {
-                        *result.get_mut(row, col2) -= scale * *result.get(col, col2);
+                        let value = *result.get(col, col2);
+                        *result.get_mut(row, col2) -= scale * value;
                     }
                 }
             }
@@ -352,7 +354,7 @@ impl NumericalCell for Fraction {
         Fraction::new(1, 1)
     }
     fn is_zero(self) -> bool {
-        self.numerator() == 0
+        self.is_zero()
     }
 }
 
