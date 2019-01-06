@@ -6,11 +6,11 @@ use std::{
     str::FromStr
 };
 
-const SMALL_DENOMINATOR: i32 = -10_000;
-const BIG_DENOMINATOR: i32 = 10_000;
+const SMALL_DENOMINATOR: i128 = -10_000;
+const BIG_DENOMINATOR: i128 = 10_000;
 
 /// Find the greatest common divisor of two numbers
-pub fn gcd(mut x: u32, mut y: u32) -> u32 {
+pub fn gcd(mut x: u128, mut y: u128) -> u128 {
     // https://en.wikipedia.org/wiki/Greatest_common_divisor#Binary_method
     // https://en.wikipedia.org/wiki/Binary_GCD_algorithm
     let mut common = 0;
@@ -60,16 +60,16 @@ pub fn gcd(mut x: u32, mut y: u32) -> u32 {
     x << common
 }
 /// Abs function that returns an unsigned integer and correctly handles overflowing
-fn abs(i: i32) -> u32 {
-    i.wrapping_abs() as u32
+fn abs(i: i128) -> u128 {
+    i.wrapping_abs() as u128
 }
 
 /// A number stored in fraction form instead of actually calculating the
 /// result. This ensures (10/3) * 3 is actually 10 and not 9.99998.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord)]
 pub struct Fraction {
-    numerator: i32,
-    denominator: i32
+    numerator: i128,
+    denominator: i128
 }
 impl Default for Fraction {
     fn default() -> Self {
@@ -81,7 +81,7 @@ impl Fraction {
     ///
     /// ## Panics
     /// Panics if the denominator is 0
-    pub fn new(numerator: i32, denominator: i32) -> Self {
+    pub fn new(numerator: i128, denominator: i128) -> Self {
         assert_ne!(denominator, 0, "denominator is 0");
         Self { numerator, denominator }
     }
@@ -89,12 +89,11 @@ impl Fraction {
     /// multiplying the float enough times until it's a whole number.
     /// 0.5 is represented as 5/10. It drops precision on overflow.
     pub fn from_float(mut numerator: f64) -> Self {
-        let mut denominator: i32 = 1000000000;
+        let mut denominator: i128 = 1000000000;
         loop {
             let new = numerator * denominator as f64;
-            if new >= std::i32::MIN as f64 && new <= std::i32::MAX as f64 {
+            if new >= std::i128::MIN as f64 && new <= std::i128::MAX as f64 {
                 numerator = new.floor();
-                println!("{} % 10 && {} % 10", numerator, denominator);
                 while numerator % 10.0 < std::f64::EPSILON && denominator % 10 == 0 {
                     numerator /= 10.0;
                     denominator /= 10;
@@ -104,16 +103,16 @@ impl Fraction {
             denominator /= 10;
             if denominator <= 1 {
                 numerator = new;
-                if numerator < std::i32::MIN as f64 {
-                    numerator = std::i32::MIN as f64;
-                } else if numerator > std::i32::MAX as f64 {
-                    numerator = std::i32::MAX as f64;
+                if numerator < std::i128::MIN as f64 {
+                    numerator = std::i128::MIN as f64;
+                } else if numerator > std::i128::MAX as f64 {
+                    numerator = std::i128::MAX as f64;
                 }
                 break;
             }
         }
         Self {
-            numerator: numerator as i32,
+            numerator: numerator as i128,
             denominator
         }
     }
@@ -126,13 +125,13 @@ impl Fraction {
             input.next().unwrap();
         }
 
-        let radix_fraction = Self::from(radix as i32);
+        let radix_fraction = Self::from(radix as i128);
         let mut result = Self::default();
 
         while let Some(digit) = input.peek().and_then(|c| c.to_digit(radix as u32)) {
             input.next().unwrap();
             result = result.checked_mul(radix_fraction)?;
-            result = result.checked_add(Self::from(digit as i32))?;
+            result = result.checked_add(Self::from(digit as i128))?;
         }
 
         if let Some('.') = input.peek() {
@@ -143,7 +142,7 @@ impl Fraction {
             while let Some(digit) = input.peek().and_then(|c| c.to_digit(radix as u32)) {
                 input.next().unwrap();
                 decimal = decimal.checked_div(radix_fraction)?;
-                result = result.checked_add(decimal.checked_mul(Self::from(digit as i32))?)?;
+                result = result.checked_add(decimal.checked_mul(Self::from(digit as i128))?)?;
             }
         }
 
@@ -158,17 +157,17 @@ impl Fraction {
         }
     }
     /// Return the numerator
-    pub fn numerator(self) -> i32 {
+    pub fn numerator(self) -> i128 {
         self.numerator
     }
     /// Return the denominator
-    pub fn denominator(self) -> i32 {
+    pub fn denominator(self) -> i128 {
         self.denominator
     }
     /// Change the denominator and scale the numerator to reflect the changes.
     /// Note that this fraction type only works with whole numbers so some
     /// denominators may cause issues. Returns None on overflow.
-    pub fn with_denominator(mut self, denominator: i32) -> Option<Self> {
+    pub fn with_denominator(mut self, denominator: i128) -> Option<Self> {
         assert_ne!(denominator, 0, "denominator is 0");
         let scale = denominator / self.denominator;
         self.numerator = self.numerator.checked_mul(scale)?;
@@ -205,7 +204,7 @@ impl Fraction {
     }
     /// Find the lowest possible denominator for fraction
     pub fn simplify(mut self) -> Self {
-        let gcd = gcd(abs(self.numerator), abs(self.denominator)) as i32;
+        let gcd = gcd(abs(self.numerator), abs(self.denominator)) as i128;
         self = Self {
             numerator: self.numerator / gcd,
             denominator: self.denominator / gcd
@@ -219,7 +218,7 @@ impl Fraction {
     /// abs of -1/2 is 1/2.
     ///
     /// # Panics
-    /// Panics if any component of the fraction is -i32::MIN, just like normal
+    /// Panics if any component of the fraction is -i128::MIN, just like normal
     /// abs
     pub fn abs(self) -> Self {
         Self {
@@ -252,7 +251,7 @@ impl Fraction {
         self.numerator as f64 / self.denominator as f64
     }
     /// Calculates the decimal integer result of this fraction
-    pub fn floor(&self) -> i32 {
+    pub fn floor(&self) -> i128 {
         self.numerator / self.denominator
     }
 
@@ -307,17 +306,19 @@ impl fmt::Display for Fraction {
 }
 impl fmt::Debug for Fraction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if *self < Fraction::from(0) {
+        let mut me = *self;
+        if me < Fraction::from(0) {
             write!(f, "-")?;
+            me = me.abs();
         } else if f.sign_plus() {
             write!(f, "+")?;
         }
         if let Some(precision) = f.precision() {
-            if self.decimal() * 10f64.powi(precision as i32) % 1.0 < std::f64::EPSILON {
-                return write!(f, "{}", self.decimal());
+            if me.decimal() * 10f64.powi(precision as i32) % 1.0 < std::f64::EPSILON {
+                return write!(f, "{}", me.decimal());
             }
         }
-        write!(f, "{}/{}", abs(self.numerator), abs(self.denominator))
+        write!(f, "{}/{}", me.numerator, me.denominator)
     }
 }
 impl Neg for Fraction {
@@ -329,7 +330,7 @@ impl Neg for Fraction {
         } else if let Some(denominator) = self.denominator.checked_neg() {
             self.denominator = denominator;
         } else {
-            // Both variables are std::i32::MIN.
+            // Both variables are std::i128::MIN.
             // -MIN/MIN == -1/1
             self.numerator = -1;
             self.denominator = 1;
@@ -349,7 +350,7 @@ macro_rules! impl_from {
         })*
     }
 }
-impl_from!(u8, u16, i8, i16, i32);
+impl_from!(u8, u16, i8, i16, i32, u32, i64, u64, i128);
 
 impl<'a, T: Copy + Into<Fraction>> From<&'a T> for Fraction {
     fn from(other: &'a T) -> Self {
@@ -495,8 +496,8 @@ mod tests {
         assert_eq!(Fraction::new(9, 27).simplify(), Fraction::new(1, 3));
         assert_eq!(Fraction::new(200, 400).simplify(), Fraction::new(1, 2));
         assert_eq!(Fraction::new(-200, 400).simplify(), Fraction::new(-1, 2));
-        assert_eq!(Fraction::new(100, std::i32::MIN).simplify(), Fraction::new(-25, 536870912));
-        assert_eq!(Fraction::new(1, std::i32::MIN).simplify(), Fraction::new(1, std::i32::MIN));
+        assert_eq!(Fraction::new(100, std::i128::MIN).simplify(), Fraction::new(-25, 536870912));
+        assert_eq!(Fraction::new(1, std::i128::MIN).simplify(), Fraction::new(1, std::i128::MIN));
     }
 
     #[test]
@@ -508,7 +509,7 @@ mod tests {
     #[test]
     fn from_float() {
         assert_eq!(Fraction::from_float(1.23456), Fraction::new(123456, 100000));
-        assert_eq!(Fraction::from_float(std::f64::MAX), Fraction::new(std::i32::MAX, 1));
+        assert_eq!(Fraction::from_float(std::f64::MAX), Fraction::new(std::i128::MAX, 1));
         assert_eq!(Fraction::from_float(3.1415926535897932384626433832), Fraction::new(314159265, 100000000));
     }
 
