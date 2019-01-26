@@ -1,4 +1,4 @@
-use crate::Fraction;
+use num_traits::*;
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign}
@@ -17,7 +17,7 @@ enum MatrixRepr<'a, T: 'a + Clone> {
 /// when you add, subtract and multiply it. The lifetime of this type is
 /// because you can get a subwindow of a matrix. Most of the time it's static.
 #[derive(Clone)]
-pub struct Matrix<'a, T: 'a + Clone> {
+pub struct Matrix<'a, T: Clone> {
     inner: MatrixRepr<'a, T>,
     cols: usize,
     rows: usize
@@ -201,7 +201,7 @@ impl<'a, T: NumericalCell> Matrix<'a, T> {
     /// function that applies Gauss Jordan Elimination on this matrix and its
     /// identity matrix in order to get the inverse matrix. Returns None if
     /// inversion fails.
-    pub fn inverse(&self) -> Option<Matrix<'static, T>> {
+    pub fn inv(&self) -> Option<Matrix<'static, T>> {
         let mut identity = Matrix::identity(self.cols);
         if self.clone().gauss_jordan_eliminate(&mut identity) {
             Some(identity)
@@ -305,62 +305,15 @@ impl<'a, T: Clone + fmt::Debug> fmt::Debug for Matrix<'a, T> {
     }
 }
 
-/// A trait for numerical types
-pub trait NumericalCell: Copy + Div<Self, Output = Self> + DivAssign<Self> + Mul<Self, Output = Self> + SubAssign<Self> {
-    /// Return zero for this type
-    fn zero() -> Self;
-    /// Return one for this type
-    fn one() -> Self;
-    /// Return true if this value is zero
-    fn is_zero(self) -> bool;
-}
-macro_rules! impl_numcell {
-    ($($int:ident),* --- $($float:ident),*) => {
-        $(impl NumericalCell for $int {
-            fn zero() -> Self {
-                0
-            }
-            fn one() -> Self {
-                1
-            }
-            fn is_zero(self) -> bool {
-                self == 0
-            }
-        })*
-        $(impl NumericalCell for $float {
-            fn zero() -> Self {
-                0.0
-            }
-            fn one() -> Self {
-                1.0
-            }
-            fn is_zero(self) -> bool {
-                self == 0.0
-            }
-        })*
-    }
-}
-impl_numcell! {
-    i8, i16, i32, i64, i128,
-    u8, u16, u32, u64, u128
-    ---
-    f32, f64
-}
-impl NumericalCell for Fraction {
-    fn zero() -> Self {
-        Fraction::new(0, 1)
-    }
-    fn one() -> Self {
-        Fraction::new(1, 1)
-    }
-    fn is_zero(self) -> bool {
-        self.is_zero()
-    }
-}
+/// A trait that specifies which items can be used in a matrix
+pub trait NumericalCell: Zero + One + Copy + Div<Self, Output = Self> + DivAssign<Self> + Mul<Self, Output = Self> + SubAssign<Self> {}
+impl<T: Zero + One + Copy + Div<Self, Output = Self> + DivAssign<Self> + Mul<Self, Output = Self> + SubAssign<Self>> NumericalCell for T {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Fraction;
+
     fn fraction_matrix<I, F>(input: &[I], cols: usize, rows: usize, callback: F) -> Vec<Fraction>
         where
             I: Into<Fraction> + Copy,
@@ -452,7 +405,7 @@ mod tests {
                      0, -1,  2
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.inverse().unwrap()
+                |matrix| *matrix = matrix.inv().unwrap()
             ),
 
             vec![
@@ -468,7 +421,7 @@ mod tests {
                     2, 6
                 ],
                 2, 2,
-                |matrix| *matrix = matrix.inverse().unwrap()
+                |matrix| *matrix = matrix.inv().unwrap()
             ),
 
             vec![
@@ -484,7 +437,7 @@ mod tests {
                     Fraction::new(-1, 2), Fraction::new(0, 1), Fraction::new(1, 1)
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.inverse().unwrap()
+                |matrix| *matrix = matrix.inv().unwrap()
             ),
 
             vec![
@@ -501,7 +454,7 @@ mod tests {
                     1, 1, 3
                 ],
                 3, 3,
-                |matrix| *matrix = matrix.inverse().unwrap()
+                |matrix| *matrix = matrix.inv().unwrap()
             ),
 
             vec![

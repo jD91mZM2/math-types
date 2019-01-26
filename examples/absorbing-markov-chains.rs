@@ -1,6 +1,7 @@
 extern crate math_types;
 
 use math_types::{Fraction, Matrix};
+use num_traits::*;
 
 use std::io::{self, prelude::*};
 
@@ -79,7 +80,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
     let q = matrix.window(0, 0, end, end);
     println!("({:?} - {:?})^-1", i, q);
     println!("{:?}^-1", i.clone() - &q);
-    let n = (i - &q).inverse().unwrap();
+    let n = (i - &q).inv().unwrap();
     println!("N = (I-Q)^-1 = {:?}", n);
 
     println!();

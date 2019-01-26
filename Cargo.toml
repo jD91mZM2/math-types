@@ -1,7 +1,16 @@
 [package]
-name = "math-types"
-version = "0.1.0"
 authors = ["jD91mZM2 <me@krake.one>"]
 edition = "2018"
+name = "math-types"
+version = "0.1.0"
 
 [dependencies]
+num-traits = "0.2.6"
+smallvec = "0.6.7"
+
+[dev-dependencies]
+criterion = "0.2.9"
+
+[[bench]]
+name = "bigint"
+harness = false
