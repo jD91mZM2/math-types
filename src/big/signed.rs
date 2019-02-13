@@ -192,18 +192,25 @@ impl Add<&Self> for BigInt {
     type Output = Self;
     fn add(self, other: &Self) -> Self::Output {
         if self.sign == other.sign {
+            // Such as (1 + 3 = 4) or (-1 + -3 = -4)
             Self {
                 sign: self.sign,
                 number: self.number + &other.number
             }
-        } else if self.number >= other.number {
+        } else if self.number == other.number {
+            // (4 + -4 = 0) or (-4 + 4 = 0)
+            // Needs special casing simply because of the sign
+            Self::zero()
+        } else if self.number > other.number {
+            // Such as (4 + -3 = 1) or (-4 + 3 = -1)
             Self {
-                sign: Sign::Positive,
+                sign: self.sign,
                 number: self.number - &other.number
             }
         } else {
+            // Such as (3 + -4 = -1) or (-3 + 4 = 1)
             Self {
-                sign: Sign::Negative,
+                sign: -self.sign,
                 number: other.number.clone() - &self.number
             }
         }
@@ -341,7 +348,8 @@ mod tests {
     #[test]
     fn add_sub() {
         assert_eq!(BigInt::new(1) + 1, BigInt::new(2));
-        assert_eq!(BigInt::new(-1) + -1, BigInt::new(-2));
+        assert_eq!(BigInt::new(-2) + 1, BigInt::new(-1));
+        assert_eq!(BigInt::new(-2) + -1, BigInt::new(-3));
         assert_eq!(BigInt::new(-1) - 1, BigInt::new(-2));
         assert_eq!(BigInt::new(1) - -1, BigInt::new(2));
         assert_eq!(BigInt::new(1) - 5, BigInt::new(-4));
