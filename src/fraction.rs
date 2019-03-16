@@ -568,6 +568,21 @@ impl<N: FractionNumber + From<i128>> FloatConst for Fraction<N> {
     }
 }
 
+impl<E, N> Pow<E> for Fraction<N>
+    where
+        E: Clone,
+        N: FractionNumber + Pow<E, Output = N>
+{
+    type Output = Self;
+
+    fn pow(mut self, exp: E) -> Self::Output {
+        // (n/d)^e = (n^e) / (d^e)
+        self.numerator = self.numerator.pow(exp.clone());
+        self.denominator = self.denominator.pow(exp);
+        self
+    }
+}
+
 macro_rules! impl_op {
     ($($trait:ident $fn:ident = $call:ident),* --- $($trait_assign:ident $fn_assign:ident = ($op_assign:tt)),*) => {
         $(impl<N: FractionNumber, T: Into<Fraction<N>>> $trait<T> for Fraction<N> {

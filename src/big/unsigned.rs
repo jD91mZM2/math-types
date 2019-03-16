@@ -5,11 +5,10 @@ use std::{
     cmp::{self, Ordering},
     fmt,
     iter,
-    mem,
     ops::*
 };
 
-pub const BITS: usize = mem::size_of::<u32>() * 8;
+pub const BITS: usize = 32;
 
 #[derive(Clone, Default, PartialEq, Eq, Hash)]
 pub struct BigUint {
@@ -86,18 +85,19 @@ impl BigUint {
     }
     /// Performs division and remainder in one step
     pub fn divide(&self, other: &Self) -> Option<(Self, Self)> {
-        // Tackling this in binary reduces the problem from O(n^2) to O(n)
-        // The algorithm is similar to long division on paper, and works like
+        // Tackling this in binary simplifies the problem significantly. The
+        // algorithm is similar to long division on paper, and works like
         // this:
         // - Take a digit
         // - If the new number is less than the divisor, write 0 and repeat.
-        // - Divide the new number, write the result, and repeat calculation
-        //   on the remainder.
+        // - Divide the new number, write 1, and repeat calculation on the
+        // remainder.
         //
-        // In binary, dividing can only occur at a maximum of 1 time, which
-        // means we can just subtract. This is incredibly convenient compared
-        // to using the full digits and somehow dividing parts of the number
-        // magically to obtain the full number.
+        // In binary, the number we divide is always less than 2x the
+        // denominator, which means we can just subtract once to get the
+        // remainder. I'm unsure if this is faster or slower than using the
+        // normal base (which would require parts of the code to be the
+        // traditional and slow subtract-while-bigger way)
         if other.is_zero() {
             return None;
         }
@@ -248,22 +248,36 @@ impl CheckedSub for BigUint {
 }
 impl ShlAssign<usize> for BigUint {
     fn shl_assign(&mut self, shift: usize) {
-        let amount = 1 + shift / BITS;
-        self.digits.extend(iter::repeat(0).take(amount));
-        let mut bits = self.bits_mut();
-        bits.goto_end();
-
-        while let Some(_) = bits.get() {
-            let bit = bits.peek_backwards(shift).unwrap_or_default();
-            bits.set(bit);
-
-            if bits.pos() == 0 {
-                break;
+        if shift <= BITS {
+            // Use fast shift that can only shift between two neighbor digits
+            let mut overflow = 0;
+            for digit in &mut self.digits {
+                let new_overflow = ((*digit as u64) << shift >> BITS) as u32;
+                *digit <<= shift;
+                *digit += overflow;
+                overflow = new_overflow;
             }
-            bits.backwards(1);
-        }
+            if overflow > 0 {
+                self.digits.push(overflow);
+            }
+        } else {
+            let amount = 1 + shift / BITS;
+            self.digits.extend(iter::repeat(0).take(amount));
+            let mut bits = self.bits_mut();
+            bits.goto_end();
 
-        self.trim_end();
+            while let Some(_) = bits.get() {
+                let bit = bits.peek_backwards(shift).unwrap_or_default();
+                bits.set(bit);
+
+                if bits.pos() == 0 {
+                    break;
+                }
+                bits.backwards(1);
+            }
+
+            self.trim_end();
+        }
     }
 }
 impl Shl<usize> for BigUint {
@@ -275,16 +289,27 @@ impl Shl<usize> for BigUint {
 }
 impl ShrAssign<usize> for BigUint {
     fn shr_assign(&mut self, shift: usize) {
-        let mut bits = self.bits_mut();
+        if shift < BITS {
+            // Use fast shift that can only shift between two neighbor digits
+            let mut overflow = 0;
+            for digit in self.digits.iter_mut().rev() {
+                let next_overflow = *digit & ((1 << shift) - 1);
+                *digit >>= shift;
+                *digit += overflow << (BITS-shift);
+                overflow = next_overflow;
+            }
+        } else {
+            let mut bits = self.bits_mut();
 
-        while let Some(_) = bits.get() {
-            let bit = bits.peek_forwards(shift).unwrap_or_default();
-            bits.set(bit);
+            while let Some(_) = bits.get() {
+                let bit = bits.peek_forwards(shift).unwrap_or_default();
+                bits.set(bit);
 
-            bits.forwards(1);
+                bits.forwards(1);
+            }
+
+            self.trim_end();
         }
-
-        self.trim_end();
     }
 }
 impl Shr<usize> for BigUint {
@@ -671,10 +696,9 @@ mod tests {
     }
     #[test]
     fn shr() {
-        assert_eq!(BigUint::new(11u8) >> 1usize, BigUint::new(5u8));
         assert_eq!(BigUint::new(11u8) >> 2usize, BigUint::new(2u8));
-        assert_eq!(BigUint::new(11u8) >> 3usize, BigUint::new(1u8));
-        assert_eq!(BigUint::new(11u8) >> 4usize, BigUint::new(0u8));
+        assert_eq!(BigUint::new(std::u64::MAX) >> 1usize, BigUint::new(std::u64::MAX >> 1));
+        assert_eq!(BigUint::new(1180591620717411303424u128) >> 70usize, BigUint::new(1u8));
     }
     #[test]
     fn mul() {
